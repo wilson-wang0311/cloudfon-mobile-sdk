@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
   s.author           = { 'CloudFon Team' => 'dev@cloudfon.com' }
   s.source           = { :git => 'https://github.com/wilson-wang0311/cloudfon-mobile-sdk.git', :tag => s.version.to_s }
   
-  s.ios.deployment_target = '12.0'
+  s.ios.deployment_target = '12.1'
   s.swift_version = '5.0'
   
   s.source_files = 'Sources/**/*.swift'
