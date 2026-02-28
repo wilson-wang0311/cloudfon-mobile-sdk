@@ -1,0 +1,25 @@
+# CocoaPods
+Pods/
+Podfile.lock
+*.xcworkspace
+*.xcuserstate
+xcuserdata/
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+*.moved-aside
+
+# OS
+.DS_Store
+
+# Build
+build/
+DerivedData/
+
+# IDE
+.idea/
+
+# Swift Package Manager
+.swiftpm/
