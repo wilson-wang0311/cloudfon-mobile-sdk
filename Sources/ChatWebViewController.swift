@@ -9,13 +9,13 @@ public class ChatWebViewController: UIViewController {
     private var webView: WKWebView!
     private var progressView: UIProgressView?
     
-    var baseUrl: String = ""
-    var planId: String = ""
-    var apiKey: String = ""
-    var userId: String = ""
-    var userEmail: String = ""
-    var userName: String = ""
-    var userAvatar: String?
+    public var baseUrl: String = ""
+    public var planId: String = ""
+    public var apiKey: String = ""
+    public var userId: String = ""
+    public var userEmail: String = ""
+    public var userName: String = ""
+    public var userAvatar: String?
     
     /// 窗口关闭回调
     var onDismiss: (() -> Void)?
@@ -131,6 +131,16 @@ public class ChatWebViewController: UIViewController {
     
     private func buildChatUrl() -> String {
         guard !baseUrl.isEmpty else { return "" }
+        
+        // 如果 baseUrl 已经是完整 URL（包含 .html 或其他路径），直接使用
+        if baseUrl.contains(".html") || baseUrl.contains(".htm") || baseUrl.contains("/chat/") || baseUrl.contains("/webview/") {
+            var url = baseUrl
+            if !planId.isEmpty {
+                let separator = url.contains("?") ? "&" : "?"
+                url += "\(separator)planId=\(planId)"
+            }
+            return url
+        }
         
         var components = URLComponents(string: "\(baseUrl)/chat/WelcomeFormView")
         var queryItems: [URLQueryItem] = []

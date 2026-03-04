@@ -201,8 +201,8 @@ class MainViewController: UIViewController {
     // MARK: - Actions
 
     @objc private func openTestPageTapped() {
-        // 使用本地测试页面或远程 URL
-        let testPageURL = "https://raw.githubusercontent.com/wilson-wang0311/cloudfon-mobile-sdk/main/CloudFonDemo/Resources/test_page.html"
+        // 使用测试页面 URL
+        let testPageURL = "https://cloudcx-day.cloudfon.net/test_page.html"
         
         // 修改 CloudFonConfig 使用测试页面
         let config = CloudFonConfig(
@@ -221,7 +221,7 @@ class MainViewController: UIViewController {
         chatVC.modalPresentationStyle = .fullScreen
         
         present(chatVC, animated: true)
-        addLog("已打开测试页面")
+        addLog("已打开测试页面: \(testPageURL)")
     }
 
     @objc private func testJSBridgeTapped() {
