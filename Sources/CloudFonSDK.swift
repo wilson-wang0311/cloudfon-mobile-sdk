@@ -14,6 +14,7 @@ public final class CloudFonSDK {
     
     private var config: CloudFonConfig?
     private var isInitialized = false
+    private var currentChatViewController: ChatWebViewController?
     
     /// 未读数
     public private(set) var unreadCount: Int = 0 {
@@ -64,11 +65,20 @@ public final class CloudFonSDK {
         
         viewController.present(chatViewController, animated: true)
         isMessengerVisible = true
+        currentChatViewController = chatViewController
+        
+        // 监听窗口关闭
+        chatViewController.onDismiss = { [weak self] in
+            self?.isMessengerVisible = false
+            self?.currentChatViewController = nil
+        }
     }
     
     /// 隐藏聊天窗口
     public func hideMessenger() {
+        currentChatViewController?.dismiss(animated: true)
         isMessengerVisible = false
+        currentChatViewController = nil
     }
     
     /// 设置 Launcher 按钮可见性
@@ -101,6 +111,45 @@ public final class CloudFonSDK {
     /// SDK 是否已初始化
     public func isReady() -> Bool {
         return isInitialized
+    }
+    
+    /// 调用 WebView 中的 JavaScript 方法
+    /// - Parameters:
+    ///   - method: 方法名
+    ///   - params: 参数字典
+    ///   - completion: 完成回调
+    public func callJavaScriptMethod(_ method: String, params: [String: Any]? = nil, completion: ((Any?, Error?) -> Void)? = nil) {
+        currentChatViewController?.callJavaScript(method: method, params: params, callback: completion)
+    }
+    
+    /// 发送消息给 WebView 页面
+    /// - Parameter data: 要发送的数据
+    public func sendMessageToWebView(_ data: [String: Any]) {
+        callJavaScriptMethod("onMessageReceived", params: data)
+    }
+    
+    /// 通知 WebView 未读数变化
+    /// - Parameter count: 未读数
+    public func notifyUnreadCountToWebView(_ count: Int) {
+        callJavaScriptMethod("onUnreadCountChanged", params: ["count": count])
+    }
+    
+    /// 通知 WebView 用户信息已更新
+    /// - Parameter userInfo: 用户信息
+    public func notifyUserInfoUpdated(_ userInfo: [String: Any]) {
+        callJavaScriptMethod("onUserInfoUpdated", params: userInfo)
+    }
+    
+    /// 通知 WebView 主题已更改
+    /// - Parameter theme: 主题名称
+    public func notifyThemeChanged(_ theme: String) {
+        callJavaScriptMethod("onThemeChanged", params: ["theme": theme])
+    }
+    
+    /// 通知 WebView 语言已更改
+    /// - Parameter locale: 语言代码
+    public func notifyLanguageChanged(_ locale: String) {
+        callJavaScriptMethod("onLanguageChanged", params: ["locale": locale])
     }
     
     // MARK: - Private Methods

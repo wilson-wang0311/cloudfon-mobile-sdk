@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudFon SDK 测试页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: #667eea;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #d97706;
+        }
+        .btn-info {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #2563eb;
+        }
+        .log-container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            color: #10b981;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+        }
+        .log-entry.error {
+            color: #ef4444;
+        }
+        .log-entry.info {
+            color: #3b82f6;
+        }
+        .log-entry.warning {
+            color: #f59e0b;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .test-result {
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+        .test-result.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+        .test-result.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #ef4444;
+        }
+        .received-data {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #0369a1;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .received-data h4 {
+            margin-bottom: 8px;
+            color: #075985;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 CloudFon SDK 测试页面</h1>
+        
+        <!-- SDK 状态 -->
+        <div class="card">
+            <h2>SDK 状态</h2>
+            <div id="sdkStatus">
+                <span class="status info">等待 SDK 初始化...</span>
+            </div>
+        </div>
+        
+        <!-- SDK 调用 Native -->
+        <div class="card">
+            <h2>HTML 调用 Native (Web → SDK)</h2>
+            <div class="btn-group">
+                <button class="btn-danger" onclick="testCloseWindow()">关闭 WebView</button>
+                <button class="btn-warning" onclick="testSetTheme()">设置主题</button>
+                <button class="btn-info" onclick="testSetLanguage()">设置语言</button>
+            </div>
+        </div>
+        
+        <!-- Native 调用 HTML -->
+        <div class="card">
+            <h2>Native 调用 HTML (SDK → Web)</h2>
+            <div class="btn-group">
+                <button class="btn-success" onclick="requestNativeConfig()">请求 Native 配置</button>
+                <button class="btn-primary" onclick="simulateMessage()">模拟收到消息</button>
+            </div>
+            <div class="received-data">
+                <h4>接收到的数据:</h4>
+                <div id="receivedData">暂无数据</div>
+            </div>
+        </div>
+        
+        <!-- 发送自定义事件 -->
+        <div class="card">
+            <h2>发送自定义事件</h2>
+            <div class="btn-group">
+                <button class="btn-primary" onclick="sendCustomEvent()">发送自定义事件</button>
+                <button class="btn-success" onclick="notifyUnreadCount()">通知未读数</button>
+            </div>
+        </div>
+        
+        <!-- 日志 -->
+        <div class="card">
+            <h2>📋 通信日志</h2>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry info">页面已加载，等待 SDK 初始化...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 日志记录
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logContainer.insertBefore(entry, logContainer.firstChild);
+        }
+        
+        // 显示接收到的数据
+        function showReceivedData(data) {
+            document.getElementById('receivedData').textContent = JSON.stringify(data, null, 2);
+        }
+        
+        // 更新 SDK 状态
+        function updateSDKStatus(status, message) {
+            const statusEl = document.getElementById('sdkStatus');
+            statusEl.innerHTML = `<span class="status ${status}">${message}</span>`;
+        }
+        
+        // 初始化回调
+        window.CloudFonNative = {
+            // 窗口准备好
+            onWindowReady: function() {
+                log('窗口已准备好', 'success');
+                updateSDKStatus('success', 'SDK 已就绪 ✓');
+                
+                // 自动请求 Native 配置
+                requestNativeConfig();
+            },
+            
+            // 收到消息
+            onMessageReceived: function(data) {
+                log('收到消息: ' + JSON.stringify(data), 'success');
+                showReceivedData({type: 'message', data: data});
+                alert('收到消息: ' + JSON.stringify(data));
+            },
+            
+            // 未读数变化
+            onUnreadCountChanged: function(data) {
+                log('未读数变化: ' + data.count, 'warning');
+                showReceivedData({type: 'unreadCount', data: data});
+            },
+            
+            // 用户信息更新
+            onUserInfoUpdated: function(data) {
+                log('用户信息已更新: ' + JSON.stringify(data), 'success');
+                showReceivedData({type: 'userInfo', data: data});
+            },
+            
+            // 主题变化
+            onThemeChanged: function(data) {
+                log('主题已更改: ' + data.theme, 'info');
+                showReceivedData({type: 'theme', data: data});
+            },
+            
+            // 语言变化
+            onLanguageChanged: function(data) {
+                log('语言已更改: ' + data.locale, 'info');
+                showReceivedData({type: 'language', data: data});
+            },
+            
+            // Native 配置
+            onNativeConfigReceived: function(config) {
+                log('收到 Native 配置: ' + JSON.stringify(config), 'success');
+                updateSDKStatus('success', '已连接 - ' + config.baseUrl);
+                showReceivedData({type: 'config', data: config});
+            },
+            
+            // 自定义事件
+            onCustomEvent: function(data) {
+                log('收到自定义事件: ' + JSON.stringify(data), 'success');
+                showReceivedData({type: 'customEvent', data: data});
+                alert('收到自定义事件: ' + JSON.stringify(data));
+            }
+        };
+        
+        // 测试: 关闭 WebView
+        function testCloseWindow() {
+            log('尝试关闭 WebView...', 'info');
+            if (window.CloudFonWeb) {
+                window.CloudFonWeb.call('closeWindow', {});
+                log('已发送关闭请求', 'success');
+            } else {
+                log('CloudFonWeb 不可用', 'error');
+                alert('CloudFonWeb 不可用');
+            }
+        }
+        
+        // 测试: 设置主题
+        function testSetTheme() {
+            const theme = prompt('请输入主题 (light/dark):', 'dark');
+            if (theme && window.CloudFonWeb) {
+                window.CloudFonWeb.call('setTheme', {theme: theme});
+                log('已设置主题: ' + theme, 'success');
+            }
+        }
+        
+        // 测试: 设置语言
+        function testSetLanguage() {
+            const locale = prompt('请输入语言代码 (zh-CN/en):', 'zh-CN');
+            if (locale && window.CloudFonWeb) {
+                window.CloudFonWeb.call('setLanguage', {locale: locale});
+                log('已设置语言: ' + locale, 'success');
+            }
+        }
+        
+        // 请求 Native 配置
+        function requestNativeConfig() {
+            if (window.CloudFonWeb) {
+                window.CloudFonWeb.call('getNativeConfig', {});
+                log('已请求 Native 配置', 'info');
+            } else {
+                log('CloudFonWeb 不可用', 'error');
+            }
+        }
+        
+        // 模拟收到消息
+        function simulateMessage() {
+            if (window.CloudFonWeb) {
+                // 模拟 Native 调用 JS
+                window.CloudFonNative.onMessageReceived({
+                    type: 'text',
+                    content: '这是一条测试消息',
+                    from: '客服001',
+                    timestamp: Date.now()
+                });
+                log('模拟消息已发送', 'success');
+            }
+        }
+        
+        // 发送自定义事件
+        function sendCustomEvent() {
+            if (window.CloudFonWeb) {
+                const eventData = {
+                    eventName: 'testEvent',
+                    message: 'Hello from HTML!',
+                    timestamp: Date.now(),
+                    data: { key: 'value' }
+                };
+                window.CloudFonWeb.call('onCustomEvent', eventData);
+                log('已发送自定义事件', 'success');
+            }
+        }
+        
+        // 通知未读数
+        function notifyUnreadCount() {
+            if (window.CloudFonWeb) {
+                const count = Math.floor(Math.random() * 10);
+                window.CloudFonWeb.call('onUnreadCountChanged', count.toString());
+                log('已通知未读数: ' + count, 'success');
+            }
+        }
+        
+        // 页面加载完成
+        window.onload = function() {
+            log('页面加载完成', 'info');
+            
+            // 延迟检查 SDK 是否就绪
+            setTimeout(function() {
+                if (window.CloudFonWeb) {
+                    log('CloudFonWeb 已注入', 'success');
+                    updateSDKStatus('info', 'CloudFonWeb 已注入');
+                } else {
+                    log('CloudFonWeb 未注入，请确保在 SDK WebView 中运行', 'error');
+                    updateSDKStatus('error', 'CloudFonWeb 未注入');
+                }
+            }, 1000);
+        };
+    </script>
+</body>
+</html>

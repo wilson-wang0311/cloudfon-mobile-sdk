@@ -17,6 +17,9 @@ public class ChatWebViewController: UIViewController {
     var userName: String = ""
     var userAvatar: String?
     
+    /// 窗口关闭回调
+    var onDismiss: (() -> Void)?
+    
     // 允许的域名白名单
     private let allowedDomains = ["cloudcx.cloudfon.net", "cloudfon.net", "cloudfon.com"]
     
@@ -174,22 +177,41 @@ public class ChatWebViewController: UIViewController {
         let jsCode = """
             window.CloudFonWeb = {
                 call: function(method, params) {
-                    console.log('CloudFonWeb.call:', method, params);
+                    window.webkit.messageHandlers.CloudFonNative.postMessage({
+                        method: method,
+                        params: JSON.stringify(params)
+                    });
                 },
                 setButtonConfig: function(config) {
-                    window.CloudFonWeb.call('setButtonConfig', JSON.stringify(config));
+                    window.CloudFonWeb.call('setButtonConfig', config);
                 },
                 closeWindow: function() {
-                    window.CloudFonWeb.call('closeWindow', '{}');
+                    window.CloudFonWeb.call('closeWindow', {});
                 },
                 updateUser: function(attributes) {
-                    window.CloudFonWeb.call('updateUser', JSON.stringify(attributes));
+                    window.CloudFonWeb.call('updateUser', attributes);
                 },
                 setTheme: function(theme) {
-                    window.CloudFonWeb.call('setTheme', JSON.stringify({theme: theme}));
+                    window.CloudFonWeb.call('setTheme', {theme: theme});
                 },
                 setLanguage: function(locale) {
-                    window.CloudFonWeb.call('setLanguage', JSON.stringify({locale: locale}));
+                    window.CloudFonWeb.call('setLanguage', {locale: locale});
+                },
+                getNativeConfig: function() {
+                    window.CloudFonWeb.call('getNativeConfig', {});
+                }
+            };
+            
+            // 供 Native 调用 JS 的回调
+            window.CloudFonNative = {
+                onUnreadCountChanged: function(count) {
+                    console.log('Unread count changed:', count);
+                },
+                onMessageReceived: function(message) {
+                    console.log('Message received:', message);
+                },
+                onWindowReady: function() {
+                    console.log('Window ready');
                 }
             };
         """
@@ -201,9 +223,43 @@ public class ChatWebViewController: UIViewController {
         }
     }
     
+    // MARK: - Native 调用 JS
+    
+    /// 调用 JS 方法
+    func callJavaScript(method: String, params: [String: Any]? = nil, callback: ((Any?, Error?) -> Void)? = nil) {
+        var jsCode = "window.CloudFonNative.\(method)("
+        if let params = params {
+            let jsonData = try? JSONSerialization.data(withJSONObject: params)
+            if let jsonString = String(data: jsonData!, encoding: .utf8) {
+                jsCode += jsonString
+            }
+        }
+        jsCode += ")"
+        
+        webView.evaluateJavaScript(jsCode) { result, error in
+            callback?(result, error)
+        }
+    }
+    
+    /// 通知 JS 未读数变化
+    func notifyUnreadCountChanged(_ count: Int) {
+        callJavaScript(method: "onUnreadCountChanged", params: ["count": count])
+    }
+    
+    /// 通知 JS 收到新消息
+    func notifyMessageReceived(_ message: [String: Any]) {
+        callJavaScript(method: "onMessageReceived", params: message)
+    }
+    
+    /// 通知 JS 窗口已准备好
+    func notifyWindowReady() {
+        callJavaScript(method: "onWindowReady")
+    }
+    
     // MARK: - Actions
     
     @objc private func closeButtonTapped() {
+        onDismiss?()
         dismiss(animated: true)
     }
     
@@ -392,10 +448,23 @@ class CloudFonJSBridgeMessageHandler: NSObject, WKScriptMessageHandler {
         case "onMessageTip":
             viewController?.showToast(message: params)
         case "requestCurrentUrl":
-            // TODO: 返回当前页面 URL
-            break
+            // 返回当前页面 URL
+            if let url = webView.url?.absoluteString {
+                callJavaScript(method: "onCurrentUrlReceived", params: ["url": url])
+            }
+        case "getNativeConfig":
+            // 返回 Native 配置给 JS
+            let config = CloudFonSDK.shared.getConfig()
+            let configJson: [String: Any] = [
+                "baseUrl": config?.baseUrl ?? "",
+                "planId": config?.planId ?? "",
+                "debug": config?.debug ?? false
+            ]
+            callJavaScript(method: "onNativeConfigReceived", params: configJson)
+        case "log":
+            print("CloudFon Web Log: \(params)")
         default:
-            break
+            print("Unknown method: \(method)")
         }
     }
 }
